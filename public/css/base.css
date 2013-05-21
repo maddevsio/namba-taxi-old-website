@@ -18,11 +18,14 @@ body {
   left: 0;
 }
 
-form {
+.right {
   z-index: 100;
   position: absolute;
   top: 15%;
   right: 10%;
+}
+
+.right form {
   background-color: #1083c2;
   padding:20px;
   opacity: 0.95;
@@ -83,4 +86,11 @@ form div {
 
 #fire {
   margin-top: 20px;
+}
+
+.namba-alert {
+  background-color: #435267 !important;
+  color: white !important;
+  width: 210px;
+  text-shadow: none !important;
 }

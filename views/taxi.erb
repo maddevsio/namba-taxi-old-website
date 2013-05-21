@@ -4,12 +4,13 @@
   <title>Форма заказа Намба такси</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
-  <link href="/css/base.css?20130228" rel="stylesheet" media="screen">
+  <link href="/css/base.css?20130521" rel="stylesheet" media="screen">
 </head>
 <body onload="initialize()">
   <div id="logo"><a href="/"><img border="0" src="/ima/logo.png" /></a></div>
   <div id="wrap"></div>
-  <form id="order">
+  <div class="right">
+    <form id="order">
     <fieldset>
       <legend>Онлайн заказ такси</legend>
       <div id="result" class="alert"></div>
@@ -72,7 +73,11 @@
       <a href="http://namba.kg/#!/taxi" target="_blank">О Намба такси</a>
     </div>
   </form>
-
+    <div class="alert alert-info namba-alert">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      Вы можете узнать расстояние и стоимость поездки между двумя точками отметив их на карте
+    </div>
+  </div>
   <script src="/js/jquery.js"></script>
   <script src="/bootstrap/js/bootstrap.min.js"></script>
   <script type="text/javascript"
@@ -109,7 +114,40 @@
       return false;
     });
 
+    // Данчик, спасибо... ты вообще такой молодец на самом деле...
+
+    var directionsService = new google.maps.DirectionsService();
+    var directionsDisplay = new google.maps.DirectionsRenderer({suppressMarkers: true});
+    var on_draw_route;
+    var map;
+    var route = [];
+
+    function remove_route() {
+      _(route).each(function(marker) {
+        marker.setMap(null);
+      });
+      directionsDisplay.setMap(null);
+      route = [];
+    }
+
+    function calculate_callback(calculated_distance, origin_from_map, destination_from_map) {
+      distance = calculated_distance;
+      origin = origin_from_map;
+      destination = destination_from_map;
+      $('#priceModal').modal('toggle');
+      distance_km = (distance/1000).toFixed(2);
+      $('#distance').text(distance_km + " км.");
+
+      if (distance_km < 1) {
+        distance_km = 1
+      }
+
+      price_light = 50 + (distance_km - 1)*10;
+      $('#price-light').text(price_light.toFixed(1) + " с.");
+    }
+
     function initialize() {
+
       var mapOptions = {
         center: new google.maps.LatLng(42.876066,74.591289),
         zoom: 14,
@@ -117,7 +155,7 @@
         mapTypeId: google.maps.MapTypeId.ROADMAP
       };
 
-      var map = new google.maps.Map(document.getElementById("wrap"), mapOptions);
+      map = new google.maps.Map(document.getElementById("wrap"), mapOptions);
 
       if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function(pos) {
         var me = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
@@ -143,6 +181,13 @@
         });
       });
 
+      on_draw_route = calculate_callback
+
+      google.maps.event.addListener(map, 'click', function(event) {
+        point = event.latLng
+        add_point(point);
+      });
+
     }
 
     function onPositionUpdate(position) {
@@ -150,10 +195,73 @@
       var lng = position.coords.longitude;
     }
 
+    function add_point(point) {
+
+      var marker = new google.maps.Marker({
+        position: point,
+        map: map,
+        draggable: true,
+        icon:"/ima/point.png"
+      });
+
+      google.maps.event.addListener(marker, 'dragend', function() {
+        if (route.length == 2) {
+          draw_route();
+        }
+      });
+
+      route.push(marker);
+
+      if (route.length == 3) {
+        _(route).first().setMap(null);
+        route.shift();
+      }
+
+      if (route.length == 2) {
+        draw_route();
+      }
+    }
+
+    function draw_route() {
+      var request = {
+        origin: route[0].getPosition(),
+        destination: route[1].getPosition(),
+        travelMode: google.maps.DirectionsTravelMode.DRIVING
+      };
+
+      directionsDisplay.setMap(map);
+      directionsService.route(request, function(response, status) {
+        if (status == google.maps.DirectionsStatus.OK) {
+          var leg = response.routes[0].legs[0];
+          directionsDisplay.setDirections(response);
+          on_draw_route(leg.distance.value, leg.start_location, leg.end_location);
+        }
+      });
+
+    }
+
     if(navigator.geolocation)
       navigator.geolocation.getCurrentPosition(onPositionUpdate);
 
+
   </script>
+  <div id="priceModal" class="modal hide fade">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+      <h3>Расчет расстояния и стоимости поездки</h3>
+    </div>
+    <div class="modal-body">
+      <p>Расстояние: <span id="distance" class="label label-warning"></span></p>
+      <p>Стоимость: <span id="price-light" class="label label-success"></span></p>
+      <div class="alert">
+        <strong>Внимание!</strong> Данные расчеты являются приблизительными и могут отличаться от фактической стоимости поездки.
+        Более детальную информацию вы можете узнать у оператора по телефонам <span class="label label-success">(0312) 976 000, (0559) 976 000, (0771) 60 9760, (0709) 976 000.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-info" data-dismiss="modal" aria-hidden="true">Закрыть</button>
+    </div>
+  </div>
 
   <div id="infoModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-header">
