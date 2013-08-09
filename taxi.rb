@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require 'rubygems'
 require 'bundler/setup'
 require 'sinatra'
@@ -66,7 +68,7 @@ post '/order' do
     return {:result => 'error', :message => 'Вы указали не верный номер телефона'}.to_json
   end
 
-  if params[:phone]['/^[0-9]+$/']
+  if /^\d+$/.match(params[:phone]) == nil
     return {:result => 'error', :message => 'Номер телефона должен состоять только из цифр'}.to_json
   end
 
