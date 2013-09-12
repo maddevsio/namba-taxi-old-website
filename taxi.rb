@@ -15,7 +15,7 @@ require 'open-uri'
 ### configure ###
 
 CARS  = '/SmartServerApi/Api/GetFreeDrivers'
-ORDER = '/SmartServerApi/Api/MakeOrderAsIncomingSms'
+ORDER = '/api/order/create'
 
 set :port, 1983
 
@@ -81,8 +81,8 @@ post '/order' do
   end
 
   begin
-    case make_request_for(ORDER, {:Phone => '+996'+ params[:code] + params[:phone], :Message => params[:address]})
-      when Net::HTTPOK then
+    @order = JSON.parse(make_request_for(ORDER, {:mobile => '+996'+ params[:code] + params[:phone], :message => params[:address]}).body)
+    if @order['success'] == true
         @result = {:result => 'ok', :message => 'Сейчас наш оператор свяжется с вами'}
     else
       @result = {:result => 'error', :message => 'Технические неполадки'}
@@ -106,7 +106,7 @@ def get_api_host_and_port
   if ARGV[0] == 'production'
     return {:host => '212.42.119.12', :port => 80}
   end
-  {:host => 'testnambaapi.zapto.org', :port => 8085}
+  {:host => '127.0.0.1', :port => 8000}
 end
 
 def make_request_for(uri, params)
