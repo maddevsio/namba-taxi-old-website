@@ -14,8 +14,8 @@ require 'open-uri'
 
 ### configure ###
 
-CARS  = '/SmartServerApi/Api/GetFreeDrivers'
-ORDER = '/SmartServerApi/Api/MakeOrderAsIncomingSms'
+CARS  = '/api/drivers/free/get/'
+ORDER = '/api/order/create'
 
 set :port, 1983
 
@@ -44,7 +44,7 @@ get '/cars' do
   end
 
   content_type :json
-  @cars['Drivers'].to_json
+  @cars['drivers'].to_json
 end
 
 post '/order' do
@@ -81,11 +81,11 @@ post '/order' do
   end
 
   begin
-    case make_request_for(ORDER, {:Phone => '+996'+ params[:code] + params[:phone], :Message => params[:address]})
-      when Net::HTTPOK then
+    @order = JSON.parse(make_request_for(ORDER, {:mobile => '996'+ params[:code] + params[:phone], :message => params[:address], :source => 'swift.kg'}).body)
+    if @order['success'] == true
         @result = {:result => 'ok', :message => 'Сейчас наш оператор свяжется с вами'}
-      else
-        @result = {:result => 'error', :message => 'Технические неполадки'}
+    else
+      @result = {:result => 'error', :message => 'Технические неполадки'}
     end
   rescue
     @result = {:result => 'error', :message => 'Технические неполадки'}
@@ -104,9 +104,9 @@ end
 
 def get_api_host_and_port
   if ARGV[0] == 'production'
-    return {:host => '212.42.119.12', :port => 80}
+    return {:host => 'namba.swift.kg', :port => 443}
   end
-  {:host => 'testnambaapi.zapto.org', :port => 8085}
+  {:host => 'namba.swift.kg', :port => 443}
 end
 
 def make_request_for(uri, params)
@@ -114,6 +114,8 @@ def make_request_for(uri, params)
   api = get_api_host_and_port
   request.logger.info("API address is #{api.inspect}")
   http = Net::HTTP.new(api[:host], api[:port])
+  http.use_ssl = true
+  http.verify_mode = OpenSSL::SSL::VERIFY_NONE
   req = Net::HTTP::Post.new(uri)
   req.set_form_data(params)
   res = http.request(req)
