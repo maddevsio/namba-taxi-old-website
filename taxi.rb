@@ -81,7 +81,7 @@ post '/order' do
   end
 
   begin
-    @order = JSON.parse(make_request_for(ORDER, {:mobile => '996'+ params[:code] + params[:phone], :message => params[:address], :source => 'swift.kg'}).body)
+    @order = JSON.parse(make_request_for(ORDER, {:mobile => '996'+ params[:code] + params[:phone], :message => params[:address], :source => 'namba.kg'}).body)
     if @order['success'] == true
         @result = {:result => 'ok', :message => 'Сейчас наш оператор свяжется с вами'}
     else
